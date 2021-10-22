@@ -405,9 +405,11 @@ variant_value(Package, Variant, Value)
 % whenever possible. If a variant is set in a spec, or if it is
 % specified in an external, we score it as if it was a default value.
 variant_not_default(Package, Variant, Value, 1)
- :- variant_value(Package, Variant, Value),
-    not variant_default_value(Package, Variant, Value),
-    not variant_set(Package, Variant, Value),
+ :- variant_value(Package, Variant, Actual),
+    not variant_value(Package, Variant, Value),
+    variant_default_value(Package, Variant, Value),
+    Actual != Value,
+    not variant_set(Package, Variant, Actual),
     not external_with_variant_set(Package, Variant, Value),
     node(Package).
 
@@ -829,21 +831,6 @@ opt_criterion(13, "preferred providers for roots").
       build_priority(Provider, Priority)
 }.
 
-% If the value is a multivalued variant there could be multiple
-% values set as default. Since a default value has a weight of 0 we
-% need to maximize their number below to ensure they're all set
-opt_criterion(112, "(build) number of values in multi-valued variants (root)").
-opt_criterion(12, "number of values in multi-valued variants (root)").
-#minimize{ 0@112 : #true }.
-#minimize{ 0@12 : #true }.
-#maximize {
-    1@12+Priority,Package,Variant,Value
-    : variant_not_default(Package, Variant, Value, Weight),
-      not variant_single_value(Package, Variant),
-      root(Package),
-      build_priority(Package, Priority)
-}.
-
 opt_criterion(111, "(build) preferred providers for roots").
 opt_criterion(11, "preferred providers for roots").
 #minimize{ 0@111: #true }.
@@ -917,21 +904,6 @@ opt_criterion(5, "version badness").
 #minimize{
     Weight@5+Priority,Package
     : version_weight(Package, Weight),
-      build_priority(Package, Priority)
-}.
-
-% If the value is a multivalued variant there could be multiple
-% values set as default. Since a default value has a weight of 0 we
-% need to maximize their number below to ensure they're all set
-opt_criterion(104, "(build) number of values in multi valued variants (non-root)").
-opt_criterion(4, "number of values in multi valued variants (non-root)").
-#minimize{ 0@104 : #true }.
-#minimize{ 0@4 : #true }.
-#maximize {
-    1@4+Priority,Package,Variant,Value
-    : variant_not_default(Package, Variant, Value, _),
-      not variant_single_value(Package, Variant),
-      not root(Package),
       build_priority(Package, Priority)
 }.
 
